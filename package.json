@@ -1,0 +1,15 @@
+{
+  "name": "simple-static-site",
+  "version": "1.0.0",
+  "description": "A simple static site with Markdown support",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "serve": "node -e \"const http = require('http'); const fs = require('fs'); const path = require('path'); http.createServer((req, res) => { let url = req.url === '/' ? '/index.html' : req.url; if (!path.extname(url)) url += '.html'; const filePath = path.join('dist', url); fs.readFile(filePath, (err, data) => { if (err) { fs.readFile('dist/404.html', (err, data) => { res.writeHead(404, { 'Content-Type': 'text/html' }); res.end(err ? '404 Not Found' : data); }); } else { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(data); } }); }).listen(3000, () => console.log('Server running at http://localhost:3000/'))\"",
+    "start": "npm run build && npm run serve"
+  },
+  "dependencies": {
+    "marked": "^4.3.0",
+    "fs-extra": "^11.1.1"
+  }
+} 
