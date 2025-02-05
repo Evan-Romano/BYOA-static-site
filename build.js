@@ -1,41 +1,27 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { marked } = require('marked');
+const template = require('./src/templates/base');
 
-// Base template for all pages
-const template = (title, content) => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/blog">Blog</a>
-        <a href="/about">About</a>
-        <a href="/faq">FAQ</a>
-    </nav>
-    <main>
-        ${content}
-    </main>
-    <footer>
-        <p>&copy; ${new Date().getFullYear()} Your Name</p>
-    </footer>
-</body>
-</html>
-`;
+// Configuration
+const config = {
+    contentDir: 'src/content',
+    outputDir: 'dist',
+    staticDirs: {
+        css: 'src/css'
+    }
+};
 
 // Ensure required directories exist
-fs.ensureDirSync('dist');
-fs.ensureDirSync('dist/css');
-fs.ensureDirSync('dist/blog');
+fs.ensureDirSync(config.outputDir);
+fs.ensureDirSync(path.join(config.outputDir, 'css'));
+fs.ensureDirSync(path.join(config.outputDir, 'blog'));
 
 // Copy static assets
-fs.copySync('src/css', 'dist/css', { overwrite: true });
+Object.entries(config.staticDirs).forEach(([dir, srcPath]) => {
+    const destPath = path.join(config.outputDir, dir);
+    fs.copySync(srcPath, destPath, { overwrite: true });
+});
 
 // Process Markdown files
 function processMarkdownFiles(dir) {
@@ -56,19 +42,20 @@ function processMarkdownFiles(dir) {
         const htmlContent = marked(content);
         const title = content.split('\n')[0].replace('#', '').trim();
         
-        const relativePath = path.relative('src', dir);
+        // Calculate the output path relative to content directory
+        const relativePath = path.relative(config.contentDir, dir);
         let outputPath;
         
         // Handle index.md specially
         if (file === 'index.md') {
-            outputPath = path.join('dist', relativePath, 'index.html');
+            outputPath = path.join(config.outputDir, relativePath, 'index.html');
         } else {
             // For other files, create both file.html and file/index.html
             const baseName = file.replace('.md', '');
-            outputPath = path.join('dist', relativePath, baseName + '.html');
+            outputPath = path.join(config.outputDir, relativePath, baseName + '.html');
             
             // Create directory index version (for cleaner URLs)
-            const dirIndexPath = path.join('dist', relativePath, baseName, 'index.html');
+            const dirIndexPath = path.join(config.outputDir, relativePath, baseName, 'index.html');
             fs.ensureDirSync(path.dirname(dirIndexPath));
             fs.writeFileSync(dirIndexPath, template(title, htmlContent));
         }
@@ -78,7 +65,7 @@ function processMarkdownFiles(dir) {
     });
 }
 
-// Start processing from src directory
-processMarkdownFiles('src');
+// Start processing from content directory
+processMarkdownFiles(config.contentDir);
 
-console.log('Build complete!'); 
+console.log('Build complete! Run npm start to serve the site.'); 
